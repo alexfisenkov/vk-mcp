@@ -40,7 +40,7 @@ def activate(root,release,configdir):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--repo',default='https://github.com/alexfisenkov/vk-mcp.git')
-    p.add_argument('--sha');p.add_argument('--root',default='/srv/vk-mcp');p.add_argument('--config-dir',default='/etc/vk-mcp');p.add_argument('--state-dir',default='/var/lib/vk-mcp');p.add_argument('--public-host',default='mcp.example.com');p.add_argument('--port',type=int,default=8865);p.add_argument('--apply',action='store_true');p.add_argument('--rollback',action='store_true');p.add_argument('--auto-update',action='store_true')
+    p.add_argument('--sha');p.add_argument('--root',default='/srv/vk-mcp');p.add_argument('--config-dir',default='/etc/vk-mcp');p.add_argument('--state-dir',default='/var/lib/vk-mcp');p.add_argument('--public-host',default='mcp.example.com');p.add_argument('--port',type=int,default=8865);p.add_argument('--apply',action='store_true');p.add_argument('--rollback',action='store_true');p.add_argument('--auto-update',action='store_true');p.add_argument('--refresh-loader',action='store_true',help='Explicit operator-only replacement of static loader from this verified release')
     a=p.parse_args()
     if a.repo!='https://github.com/alexfisenkov/vk-mcp.git':raise ValueError('repository URL rejected')
     if not a.rollback and not re.fullmatch('[a-f0-9]{40}',a.sha or ''):raise ValueError('full Git SHA required')
@@ -77,6 +77,7 @@ def main():
             if previous:activate(root,previous,configdir)
             raise
         if previous:link(root/'previous',previous)
+        atomic(root/'release.json',json.dumps({'sha':release.name,'previous':previous.name if previous else None,'health':value,'operation':'rollback'},indent=2)+'\n')
         print(json.dumps(value));return
     release=root/'releases'/a.sha
     if release.exists():raise ValueError('release exists; inspect before retry')
@@ -148,6 +149,7 @@ WantedBy=multi-user.target
         for name in ('install.py','update.py'):
             dest=library/name
             if not dest.exists():atomic(dest,(release/'deploy'/name).read_text())
+            elif a.refresh_loader and not dest.is_symlink() and dest.stat().st_uid==0 and not dest.stat().st_mode&0o022:atomic(dest,(release/'deploy'/name).read_text())
             elif dest.is_symlink() or dest.stat().st_uid!=0 or dest.stat().st_mode&0o022:raise ValueError('updater source ownership')
         atomic(Path('/etc/systemd/system/mcp-vk-update.service'),f'''[Unit]
 Description=Update VK MCP from verified GitHub commit
