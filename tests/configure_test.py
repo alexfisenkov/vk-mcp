@@ -46,6 +46,17 @@ class OnboardTests(unittest.TestCase):
    with patch.object(m,'run'),patch.object(m,'health',side_effect=ValueError('not ready')),patch.object(m,'write_new',side_effect=OSError('disk full')):
     with self.assertRaises(ValueError):m.activate_configuration(staged,config,recovery,8865)
    self.assertEqual(config.read_bytes(),b'old')
+ def test_interrupt_immediately_after_replace_restores_prepared_configuration(self):
+  with tempfile.TemporaryDirectory() as directory:
+   config=Path(directory)/'config';staged=Path(directory)/'staged';recovery=Path(directory)/'recovery'
+   config.write_bytes(b'old');staged.write_bytes(b'new');recovery.write_bytes(b'old')
+   original_replace=m.os.replace
+   def replace(source,target):
+    original_replace(source,target)
+    if source==staged:raise KeyboardInterrupt()
+   with patch.object(m.os,'replace',side_effect=replace),patch.object(m,'run') as run,patch.object(m,'health'):
+    with self.assertRaisesRegex(ValueError,'restored'):m.activate_configuration(staged,config,recovery,8865)
+   self.assertEqual(config.read_bytes(),b'old');run.assert_called_once_with('systemctl','restart','mcp-vk.service')
  def test_service_key_preserves_group_and_refuses_overwrite(self):
   before={'communities':[123],'tokens':{'group':{'123':'synthetic-group'}},'writesEnabled':False}
   after=m.service_candidate(before,'synthetic-service')

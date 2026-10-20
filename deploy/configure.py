@@ -99,10 +99,10 @@ def health(port):
 
 def activate_configuration(staged,config,recovery,port):
  if recovery.is_symlink() or not recovery.is_file():raise ValueError('Prepared recovery file required')
- os.replace(staged,config)
  try:
+  os.replace(staged,config)
   run('systemctl','restart','mcp-vk.service');health(port)
- except Exception:
+ except BaseException:
   os.replace(recovery,config);run('systemctl','restart','mcp-vk.service');raise ValueError('Readiness failed; previous configuration restored')
 
 class SafeArgumentParser(argparse.ArgumentParser):

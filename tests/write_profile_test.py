@@ -175,6 +175,21 @@ class ProfileTests(unittest.TestCase):
         self.assertEqual(run.call_count, 2)
         self.assertEqual(health.call_count, 2)
 
+    def test_interrupt_after_atomic_replace_restores_and_verifies_previous_profile(self):
+        args = self.activation()
+        original_replace = m.os.replace
+        def replace(source, target):
+            original_replace(source, target)
+            if source == args[0]:
+                raise KeyboardInterrupt()
+        with patch.object(m, 'read_protected', side_effect=lambda path: path.read_bytes()), \
+             patch.object(m.os, 'replace', side_effect=replace), patch.object(m, 'run'), \
+             patch.object(m, 'health') as health, patch.object(m, 'sync_directory'):
+            with self.assertRaisesRegex(ValueError, 'restored and verified'):
+                m.activate_configuration(*args)
+        self.assertEqual(args[1].read_bytes(), args[3])
+        health.assert_called_once_with(args[-1], json.loads(args[3]))
+
     def test_snapshot_drift_or_bad_recovery_never_restarts_or_overwrites(self):
         for args in (self.activation(change_before=True), self.activation(recovery_raw=b'bad recovery')):
             snapshot = args[1].read_bytes()

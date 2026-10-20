@@ -177,14 +177,14 @@ def activate_configuration(staged, config_path, recovery, before, updated, confi
         raise ValueError('Prepared recovery copy mismatch')
     if read_protected(config_path) != before:
         raise ValueError('Configuration changed; refusing overwrite')
-    os.replace(staged, config_path)
     try:
+        os.replace(staged, config_path)
         sync_directory(config_dir)
         run('systemctl', 'restart', 'mcp-vk.service')
         health(config_dir, updated)
         if read_protected(config_path) != encode_configuration(updated):
             raise ValueError('Configuration read-back mismatch')
-    except Exception:
+    except BaseException:
         # Recovery was fully persisted before replace. Do not allocate a new
         # secret-bearing file during rollback and never retry a VK operation.
         try:
@@ -194,7 +194,7 @@ def activate_configuration(staged, config_path, recovery, before, updated, confi
             health(config_dir, json.loads(before))
             if read_protected(config_path) != before:
                 raise ValueError('Restored configuration mismatch')
-        except Exception:
+        except BaseException:
             raise ValueError('Profile failed; rollback incomplete; inspect before retry') from None
         raise ValueError('Profile failed; previous configuration restored and verified') from None
 
