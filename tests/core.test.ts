@@ -5,6 +5,21 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRuntime, matchesApprovalReceipt, verifyApprovalFile } from '../src/vk/runtime.js';
 const make = (extra:Record<string,unknown>={}) => {const stateDir=mkdtempSync(join(tmpdir(),'vk-core-'));return {runtime:createRuntime({communities:[],tokens:{},writesEnabled:false,stateDir,...extra}), stateDir};};
+test('community discovery and capabilities distinguish configured credentials from write and live permission',()=>{
+ const {runtime:r,stateDir}=make({communities:[123,456],tokens:{group:{'123':'synthetic-group'},service:'synthetic-service'}});
+ try{
+  assert.deepEqual(r.communities(),{status:'ok',communities:[{communityId:123,ownerId:-123,groupCredentialConfigured:true},{communityId:456,ownerId:-456,groupCredentialConfigured:false}]});
+  const c=r.capabilities();
+  assert.equal(c.ownerApprovalRequired,true);
+  const wall=c.methods.find(m=>m.name==='wall.get')!;assert.equal(wall.available,true);assert.equal(wall.liveVerified,false);
+  const send=c.methods.find(m=>m.name==='messages.send')!;assert.equal(send.credentialReady,true);assert.equal(send.credentialReadyCommunityCount,1);assert.equal(send.available,false);assert.equal(send.approvalRequired,true);
+  const stats=c.methods.find(m=>m.name==='stats.get')!;assert.equal(stats.credentialReady,false);assert.equal(stats.available,false);
+  assert.ok(!JSON.stringify(c).includes('synthetic'));
+  const write=createRuntime({communities:[123],tokens:{group:{'123':'synthetic-group'}},writesEnabled:true,stateDir});
+  assert.equal(write.capabilities().methods.find(m=>m.name==='messages.send')?.available,true);
+  assert.equal(write.capabilities().methods.find(m=>m.name==='wall.post')?.available,false);
+ }finally{rmSync(stateDir,{recursive:true});}
+});
 test('unconfigured methods are honest and catalog remains usable',async()=>{const {runtime:r,stateDir}=make();try{assert.equal((await r.read('wall.get',{owner_id:-123})).status,'not_configured');assert.ok(r.search('wall').length>0);assert.equal(r.describe('execute'),undefined);assert.equal(r.status().configured,false);}finally{rmSync(stateDir,{recursive:true});}});
 test('scope, parameter, reserved-token and write gates fail closed',async()=>{const {runtime:r,stateDir}=make({communities:[123],tokens:{group:{'123':'secret'}}});try{for(const p of [{owner_id:123},{owner_id:-124},{owner_id:-123,access_token:'evil'},{owner_id:-123,v:'5.1'},{owner_id:-123,unknown:'bad'}])assert.equal((await r.read('wall.get',p)).status,'rejected');assert.equal((await r.read('wall.post',{owner_id:-123,message:'x'})).status,'rejected');assert.equal((await r.plan('wall.post',{owner_id:-123,message:'x'})).status,'writes_disabled');}finally{rmSync(stateDir,{recursive:true});}});
 test('plan confirmation is exact, single-use and persists across restart',async()=>{const {runtime:r,stateDir}=make({communities:[123],tokens:{group:{'123':'secret'}},writesEnabled:true,approvalVerifier:()=>true,transport:async()=>({status:'unknown'})});try{const p=await r.plan('messages.send',{group_id:123,peer_id:2000000001,message:'synthetic'});assert.equal(p.status,'planned');if(p.status!=='planned')return;assert.equal((await r.execute(p.planId,'wrong')).status,'rejected');assert.equal((await r.execute(p.planId,p.confirmation)).status,'unknown');const again=createRuntime({communities:[123],tokens:{group:{'123':'secret'}},writesEnabled:true,stateDir});assert.equal((await again.execute(p.planId,p.confirmation)).status,'already_consumed');}finally{rmSync(stateDir,{recursive:true});}});
@@ -13,9 +28,9 @@ test('token routing respects official types and messages never fall back to pers
  const {runtime:r,stateDir}=make({communities:[123],tokens:{group:{'123':'group-synthetic'},user:'user-synthetic',service:'service-synthetic'},transport:async(method:string,params:Record<string,unknown>,token:string)=>{calls.push({method,params,token});return {status:'ok',data:{count:0}};}});
  try{assert.equal((await r.read('wall.get',{owner_id:-123})).status,'ok');assert.equal(calls[0]?.token,'user-synthetic');assert.deepEqual(calls[0]?.params,{owner_id:-123});assert.equal((await r.read('messages.getHistory',{group_id:123,peer_id:7})).status,'ok');assert.equal(calls[1]?.token,'group-synthetic');const userOnly=createRuntime({communities:[123],tokens:{user:'user-synthetic'},writesEnabled:false,stateDir});assert.equal((await userOnly.read('messages.getHistory',{group_id:123,peer_id:7})).status,'not_configured');}finally{rmSync(stateDir,{recursive:true});}
 });
-test('missing fields and destructive/unknown methods never reach transport',async()=>{
+test('missing fields and unreviewed methods never reach transport',async()=>{
  let calls=0;const {runtime:r,stateDir}=make({communities:[123],tokens:{user:'synthetic'},writesEnabled:true,approvalVerifier:()=>true,transport:async()=>{calls++;return {status:'ok'};}});
- try{assert.equal((await r.plan('wall.edit',{owner_id:-123,message:'x'})).status,'rejected');assert.equal((await r.plan('wall.delete',{owner_id:-123,post_id:7})).status,'rejected');assert.equal((await r.read('execute',{code:'return API.users.get();'})).status,'rejected');assert.equal(calls,0);}finally{rmSync(stateDir,{recursive:true});}
+ try{assert.equal((await r.plan('wall.edit',{owner_id:-123,message:'x'})).status,'rejected');assert.equal((await r.plan('wall.repost',{owner_id:-123,object:'wall-999_7'})).status,'rejected');assert.equal((await r.read('execute',{code:'return API.users.get();'})).status,'rejected');assert.equal(calls,0);}finally{rmSync(stateDir,{recursive:true});}
 });
 test('plan binds exact parameters, configuration and expiry; journal contains no payload',async()=>{
  const {readFileSync,writeFileSync}=await import('node:fs');

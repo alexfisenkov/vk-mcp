@@ -77,8 +77,20 @@ export function createRuntime(config:RuntimeConfig){
   }catch{return {status:method.mode==='write'?'unknown':'api_error',reason:'Request failed; no automatic retry'};}
  };
  return {
+  communities(){return {status:'ok',communities:communities.map(id=>({communityId:id,ownerId:-id,groupCredentialConfigured:Boolean(cfg.tokens.group?.[String(id)])}))};},
+  capabilities(){
+   const methods=catalog.map(method=>{
+    const readyCommunities=communities.filter(id=>Boolean(tokenFor(method,id)));
+    const executorReady=!method.name.startsWith('media.')||Boolean(cfg.mediaExecutor);
+    return {name:method.name,mode:method.mode,scope:method.scope,tokenTypes:method.tokenTypes,credentialReady:readyCommunities.length>0,credentialReadyCommunityCount:readyCommunities.length,
+     executorReady,available:readyCommunities.length>0&&executorReady&&(method.mode==='read'||cfg.writesEnabled),
+     approvalRequired:method.mode==='write',liveVerified:false};
+   });
+   return {status:'ok',writesEnabled:cfg.writesEnabled,ownerApprovalRequired:true,methodCount:catalog.length,readMethodCount:methods.filter(m=>m.mode==='read').length,writeMethodCount:methods.filter(m=>m.mode==='write').length,
+    readinessMeaning:'Configured credential and local policy only; VK permissions require a live per-method check',methods};
+  },
   status(){return {status:communities.length>0&&(Object.values(cfg.tokens.group??{}).some(Boolean)||Boolean(cfg.tokens.user||cfg.tokens.service))?'configured':'not_configured',configured:communities.length>0&&(Object.values(cfg.tokens.group??{}).some(Boolean)||Boolean(cfg.tokens.user||cfg.tokens.service)),communityCount:communities.length,tokenTypes:{group:Object.values(cfg.tokens.group??{}).some(Boolean),user:Boolean(cfg.tokens.user),service:Boolean(cfg.tokens.service)},writesEnabled:cfg.writesEnabled,methodCount:catalog.length,apiVersion:API_VERSION,schemaCommit:SCHEMA_COMMIT,liveVerified:false};},
-  search(query:string,limit=20){return catalog.filter(m=>(m.name+' '+m.description).toLowerCase().includes(String(query).toLowerCase())).slice(0,Math.min(100,Math.max(1,limit))).map(m=>({name:m.name,mode:m.mode,description:m.description,liveVerified:false}));},
+  search(query:string,limit=20){return catalog.filter(m=>(m.name+' '+m.description).toLowerCase().includes(String(query).toLowerCase())).slice(0,Math.min(100,Math.max(1,limit))).map(m=>({name:m.name,mode:m.mode,scope:m.scope,tokenTypes:m.tokenTypes,description:m.description,liveVerified:false}));},
   describe(name:string){const m=findMethod(name);return m?JSON.parse(JSON.stringify(m)):undefined;},
   async read(name:string,params:Record<string,unknown>):Promise<Result>{const c=check(name,params,'read');if(c.error)return c.error;return invoke(c.method!,c.params!,c.token!);},
   async plan(name:string,params:Record<string,unknown>):Promise<Result>{

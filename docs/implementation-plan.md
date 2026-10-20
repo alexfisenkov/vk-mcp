@@ -25,7 +25,7 @@ No local MCP installation/autostart; source checkout is for development. No live
 
 Execution ruling: owner explicitly approved implementation, publication and server installation; proceed continuously without repeating architecture/execution approval. Specialists may work on non-overlapping modules. Main agent owns integration and deploy.
 
-## Acceptance status
+## Initial 0.1 acceptance (historical)
 
 Infrastructure is deployed and verified: authenticated external HTTPS initialize,
 list26 and statusnot_configured; anonymous denial, OAuth discovery, isolated
@@ -41,3 +41,19 @@ checkbox records source/release/deployment readiness, not those external logins.
 The public core is a native implementation informed by three researched MCP
 projects and pinned official VK metadata; their runtime/login code is not merged.
 Operator deployment evidence and host-specific pins belong in private infrastructure.
+
+## 0.3 expansion and OAuth acceptance
+
+Current scope approved by owner: verify actual ChatGPT automatic renewal,
+expand reviewed community reads/writes including deletion/moderation, enable
+the owner's write profile and release through GitHub. Use the existing
+TypeScript SDK/runtime/plan/receipt architecture; add no arbitrary API proxy.
+Missing upstream user credentials remain explicit limitations.
+
+Work streams: pinned catalog generator and scalar/scope validation; local
+community/credential readiness tools and frequent aliases; operator write
+profile with backup/rollback; private OAuth rotation/persistence regression
+tests; public generic guides and release notes; exact-SHA final CI and deploy;
+source/HTTPS/ChatGPT catalog read-back. Actual OAuth expiry/renewal is already
+verified. Code/transport, configured profile and actual upstream writes are
+separate evidence; do not publish synthetic posts or messages for acceptance.

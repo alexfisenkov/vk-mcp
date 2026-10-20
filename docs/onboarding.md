@@ -71,8 +71,9 @@ codex mcp add vk --url https://mcp.example.com/vk/mcp --bearer-token-env-var VK_
 и vk_status внутри клиента. Не вводите VK app/client secret в настройки MCP
 вместо нужных credentials. Этот core и registration-only URL сами OAuth не
 реализуют. UI-вход ChatGPT через отдельно развёрнутый owner OAuth proxy
-подтверждён 2026-10-20; это не доказывает Refresh токенов, все вызовы инструментов
-или подключение Claude.
+подтверждён 2026-10-20. На действующем подключении также подтверждён
+[refresh после истечения access-токена](oauth-renewal.md); все методы каталога
+и подключение Claude этим не проверены.
 
 ### Облачный ChatGPT через отдельный OAuth proxy
 
@@ -171,7 +172,8 @@ Helper берёт `onboard.lock` в config-dir. Все другие писате
 
 ## 4. Приёмка и дальнейшие обновления
 
-Проверьте `vk_status`, затем `vk_describe_method` и ограниченный read для
+Проверьте `vk_status`, `vk_communities` и `vk_capabilities`, затем
+`vk_describe_method` и ограниченный read для
 каждой нужной возможности. Для стены используйте отрицательный `owner_id`,
 например `-123456789`; для комментариев — настоящий post_id из прочитанной стены.
 Не отправляйте сообщения и не публикуйте тестовый пост без отдельного разрешения.
@@ -181,6 +183,7 @@ Helper берёт `onboard.lock` в config-dir. Все другие писате
 его обновляют явно через `--refresh-loader --auto-update` из проверенного релиза.
 Откат: тот же install.py с `--rollback --apply` и прежними путями/host.
 Первая установка не имеет предыдущего релиза. Откат кода не откатывает данные.
-Для записи: включённый профиль → план → проверка владельцем → отдельный
-`sudo python3 deploy/approve.py --config /etc/vk-mcp/config.json --plan-id PLAN_ID --hash FULL_PAYLOAD_HASH`
+Для записи используйте [операторский write-профиль](write-profile.md):
+включённый профиль → план → проверка владельцем → отдельный
+`sudo python3 /srv/vk-mcp/current/deploy/approve.py --config /etc/vk-mcp/config.json --plan-id PLAN_ID --hash FULL_PAYLOAD_HASH`
 → исполнение плана. Подтверждение строкой MCP не заменяет root receipt.

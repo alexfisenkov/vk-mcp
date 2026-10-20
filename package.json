@@ -1,6 +1,6 @@
 {
   "name": "@alexfisenkov/vk-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Remote MCP for VK community management with explicit capability and write controls",

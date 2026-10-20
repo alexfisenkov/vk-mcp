@@ -3,6 +3,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createMcpServer } from './tools.js';
 import type { createRuntime } from '../vk/runtime.js';
+import { VERSION } from '../version.js';
 export type HttpOptions={runtime:ReturnType<typeof createRuntime>,bearer:string,allowedHosts:string[],allowedOrigins:string[],release:string};
 export function createHttpServer(options:HttpOptions){
  if(options.bearer.length<32)throw Error('HTTP bearer must contain at least 32 characters');
@@ -18,7 +19,7 @@ export function createHttpServer(options:HttpOptions){
    if(req.headers.origin&&!options.allowedOrigins.includes(req.headers.origin)){json(res,403,{error:'invalid_origin'});return;}
    if(Date.now()-windowStart>=60000){windowStart=Date.now();requests=0;}
    if(++requests>120){res.setHeader('Retry-After','60');json(res,429,{error:'rate_limited'});return;}
-   if(req.url==='/health'&&req.method==='GET'){const status=await options.runtime.status();json(res,200,{status:'ok',vk:(status as any).status,version:'0.2.0',release:options.release});return;}
+   if(req.url==='/health'&&req.method==='GET'){const status=await options.runtime.status();json(res,200,{status:'ok',vk:(status as any).status,version:VERSION,release:options.release});return;}
    if(req.url!=='/mcp'){json(res,404,{error:'not_found'});return;}
    if(req.method!=='POST'){res.setHeader('Allow','POST');json(res,405,{error:'method_not_allowed'});return;}
    if(req.headers['content-type']?.split(';')[0]?.trim()!=='application/json'){json(res,415,{error:'json_required'});return;}
