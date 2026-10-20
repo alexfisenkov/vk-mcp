@@ -16,11 +16,28 @@ No local MCP installation/autostart; source checkout is for development. No live
 - media redirects/private addresses and server file access cannot expose secrets
 
 ## Tasks
-- [ ] 1. Core: tests first for not_configured, token routing, parameter/community validation, write plan binding/replay. Implement pinned catalog, API client, policy and journal. Files src/catalog, src/vk, src/policy, tests/core.test.ts. API createRuntime(config) with status/search/read/plan/execute methods; errors sanitized.
-- [ ] 2. Media: fixed VK upload/save flows and bounded server-side downloads; tests private IP/DNS rebinding, redirects, size, MIME and path boundaries. Public API only server URL inputs, no client-selected arbitrary server file path.
-- [ ] 3. MCP/HTTP: official SDK stateless Streamable HTTP, named tools and generic read/write interface; health and metadata, bearer auth on all data routes, allowed Host/Origin and input bounds. Tests real initialize/list/status and anonymous denial.
-- [ ] 4. Deployment: generic systemd/install/update/rollback templates in public core; owner-specific routing and OAuth additions from clean private infrastructure checkout. Tests and dry-run precede mutations. Exact SHA release and rollback receipt.
-- [ ] 5. Review/docs: README onboarding, limitations, licenses, dependency/secret scan, independent code/risk/skeptic review and fixes. npm run check must pass.
-- [ ] 6. Publish/deploy: public GitHub repository, immutable release build, final CI/local-release evidence; dedicated systemd service and HTTPS route, OAuth discovery, authenticated remote initialize/list/status, anonymous denial. Record live SHA and remaining owner client acceptance.
+- [x] 1. Core: tests first for not_configured, token routing, parameter/community validation, write plan binding/replay. Implement pinned catalog, API client, policy and journal. Files src/catalog, src/vk, src/policy, tests/core.test.ts. API createRuntime(config) with status/search/read/plan/execute methods; errors sanitized.
+- [x] 2. Media: fixed VK upload/save flows and bounded server-side downloads; tests private IP/DNS rebinding, redirects, size, MIME and path boundaries. Public API only server URL inputs, no client-selected arbitrary server file path.
+- [x] 3. MCP/HTTP: official SDK stateless Streamable HTTP, named tools and generic read/write interface; health and metadata, bearer auth on all data routes, allowed Host/Origin and input bounds. Tests real initialize/list/status and anonymous denial.
+- [x] 4. Deployment: generic systemd/install/update/rollback templates in public core; owner-specific routing and OAuth additions from clean private infrastructure checkout. Tests and dry-run precede mutations. Exact SHA release and rollback receipt.
+- [x] 5. Review/docs: README onboarding, limitations, licenses, dependency/secret scan, independent code/risk/skeptic review and fixes. npm run check must pass.
+- [x] 6. Publish/deploy: public GitHub repository, immutable release build, final CI/local-release evidence; dedicated systemd service and HTTPS route, OAuth discovery, authenticated remote initialize/list/status, anonymous denial. Record live SHA and remaining owner client acceptance.
 
 Execution ruling: owner explicitly approved implementation, publication and server installation; proceed continuously without repeating architecture/execution approval. Specialists may work on non-overlapping modules. Main agent owns integration and deploy.
+
+## Acceptance status
+
+Infrastructure is deployed and verified: authenticated external HTTPS initialize,
+list26 and statusnot_configured; anonymous denial, OAuth discovery, isolated
+cloud UID→core compatibility, protected filesystem approval with synthetic
+transport, real rollback and return. Final application suite39PASS and private
+infrastructure checks14PASS. No real VK calls or message sends were performed.
+
+Deferred by owner: community IDs and VK credentials. Separate external acceptance
+remains for actual VK permissions and ChatGPT/Claude OAuth login, catalog refresh
+and revocation. OAuth discovery is not a completed client login. The publication
+checkbox records source/release/deployment readiness, not those external logins.
+
+The public core is a native implementation informed by three researched MCP
+projects and pinned official VK metadata; their runtime/login code is not merged.
+Operator deployment evidence and host-specific pins belong in private infrastructure.
