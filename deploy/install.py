@@ -82,7 +82,7 @@ def main():
     if release.exists():raise ValueError('release exists; inspect before retry')
     build=root/('.build-'+a.sha+'-'+secrets.token_hex(4));build.mkdir(mode=0o755);os.chown(build,builder.pw_uid,builder.pw_gid)
     # The builder cannot read runtime secrets and has no supplementary groups.
-    prefix=('systemd-run','--quiet','--wait','--pipe','--collect','--property=User=mcp-vk-build','--property=NoNewPrivileges=yes','--property=ProtectSystem=strict','--property=ProtectHome=yes','--property=ReadWritePaths='+str(build),'--property=WorkingDirectory='+str(build/'source'),'--property=KillMode=control-group','--setenv=HOME='+str(build),'--setenv=npm_config_cache='+str(build/'.npm'),'--')
+    prefix=('systemd-run','--quiet','--wait','--pipe','--collect','--property=User=mcp-vk-build','--property=NoNewPrivileges=yes','--property=PrivateTmp=yes','--property=ProtectSystem=strict','--property=ProtectHome=yes','--property=ReadWritePaths='+str(build),'--property=WorkingDirectory='+str(build/'source'),'--property=KillMode=control-group','--setenv=HOME='+str(build),'--setenv=npm_config_cache='+str(build/'.npm'),'--')
     run('runuser','-u','mcp-vk-build','--','git','clone','--no-checkout',a.repo,str(build/'source'))
     source=build/'source'
     run('runuser','-u','mcp-vk-build','--','git','-C',str(source),'checkout','--detach',a.sha)
