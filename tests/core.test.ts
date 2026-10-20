@@ -75,3 +75,8 @@ test('schema minimum string and array bounds are enforced',async()=>{
  for(const params of [{group_id:123,text:'x',ids:[1]},{group_id:123,text:'ok',ids:[]},{group_id:123,text:'ok',ids:[1,2,3]}])assert.equal(validate(method,params,[123]).ok,false);
  assert.equal(validate(method,{group_id:123,text:'ok',ids:[1,2]},[123]).ok,true);
 });
+test('verified service-key video read routes without enabling group or write access',async()=>{
+ const calls:Array<{method:string,credential:string}>=[];
+ const {runtime:r,stateDir}=make({communities:[123],tokens:{group:{'123':'synthetic-group'},service:'synthetic-service'},transport:async(method:string,_p:Record<string,unknown>,credential:string)=>{calls.push({method,credential});return {status:'ok',data:{count:0,items:[]}};}});
+ try{assert.equal((await r.read('video.get',{owner_id:-123,count:1})).status,'ok');assert.deepEqual(calls,[{method:'video.get',credential:'synthetic-service'}]);const groupOnly=createRuntime({communities:[123],tokens:{group:{'123':'synthetic-group'}},writesEnabled:false,stateDir});assert.equal((await groupOnly.read('video.get',{owner_id:-123,count:1})).status,'not_configured');assert.equal((await r.read('video.get',{owner_id:-999,count:1})).status,'rejected');assert.equal((await r.plan('media.uploadVideo',{group_id:123,source_url:'https://example.com/media.mp4'})).status,'writes_disabled');}finally{rmSync(stateDir,{recursive:true});}
+});

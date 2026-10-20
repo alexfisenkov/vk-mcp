@@ -1062,7 +1062,8 @@
     ],
     "token": "group",
     "tokenTypes": [
-      "user"
+      "user",
+      "service"
     ],
     "liveVerified": false
   },
